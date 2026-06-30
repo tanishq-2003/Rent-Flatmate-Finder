@@ -1,0 +1,37 @@
+services:
+  # The Node.js Express Backend
+  - type: web
+    name: flatmatch-backend
+    env: node
+    rootDir: server
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flatmatch-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: flatmatch-redis
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        value: https://rent-flatmate-finder-sdpg.vercel.app
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+  # The Redis Cache
+  - type: redis
+    name: flatmatch-redis
+    ipAllowList: [] # only allow internal connections
+
+databases:
+  # The PostgreSQL Database
+  - name: flatmatch-db
+    databaseName: rent_finder
+    user: flatmatch_user
