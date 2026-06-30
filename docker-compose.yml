@@ -45,7 +45,7 @@ services:
 
   client:
     build:
-      context: ./client
+      context: .
       dockerfile: Dockerfile
     container_name: rent_finder_client
     restart: always
