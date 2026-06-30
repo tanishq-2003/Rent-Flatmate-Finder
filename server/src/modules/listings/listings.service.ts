@@ -27,7 +27,7 @@ export class ListingsService {
     return listing;
   }
 
-  async getListings(query: any) {
+  async getListings(query: any, currentUserId?: string) {
     const { 
       page = 1, 
       limit = 10, 
@@ -68,8 +68,39 @@ export class ListingsService {
       prisma.listing.count({ where })
     ]);
 
+    let userProfile = null;
+    if (currentUserId) {
+      const user = await prisma.user.findUnique({ where: { id: currentUserId }, include: { profile: true } });
+      userProfile = user?.profile;
+    }
+
+    const listingsWithScores = listings.map(listing => {
+      let compatibilityScore = null;
+      if (userProfile) {
+        let score = 50; // Base Score
+        
+        // Budget match (+25)
+        if (userProfile.budgetMax && listing.rent <= userProfile.budgetMax) {
+          score += 25;
+        }
+
+        // Gender Match (+15)
+        if (listing.genderPreference === 'ANY' || listing.genderPreference === userProfile.gender) {
+          score += 15;
+        }
+
+        // Pets Match (+10)
+        if (!userProfile.pets || (userProfile.pets && listing.petsAllowed)) {
+          score += 10;
+        }
+
+        compatibilityScore = Math.min(score, 100);
+      }
+      return { ...listing, compatibilityScore };
+    });
+
     return {
-      listings,
+      listings: listingsWithScores,
       pagination: {
         total,
         page: pageNum,

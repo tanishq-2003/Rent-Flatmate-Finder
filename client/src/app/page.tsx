@@ -1,65 +1,122 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React from "react";
+import { ArrowRight, Home, Sparkles, MessageCircle, Search, User } from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "../context/AuthContext";
+
+export default function HomePage() {
+  const { user, logout } = useAuth();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <>
+      {/* Background Ambient Glows */}
+      <div className="glow glow-top" />
+      <div className="glow glow-bottom" />
+
+      {/* Navigation Bar */}
+      <nav className="navbar">
+        <div className="container">
+          <Link href="/" className="logo">
+            <Home className="text-primary" size={28} />
+            <span>FlatMatch</span>
+          </Link>
+          <div className="nav-links">
+            <Link href="#">Find a Room</Link>
+            <Link href="#">Find a Flatmate</Link>
+            <Link href="#">How it works</Link>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {user ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                  <User size={20} />
+                  <span>{user.profile?.name || user.email}</span>
+                </div>
+                <button className="btn-outline" onClick={logout} style={{ padding: '0.5rem 1rem' }}>Log out</button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="btn-outline" style={{ display: 'inline-flex', padding: '0.5rem 1rem' }}>Log in</Link>
+                <Link href="/register" className="btn-primary" style={{ display: 'inline-flex', padding: '0.5rem 1rem' }}>Sign up</Link>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <main className="container">
+        <section className="hero">
+          <div className="glass-panel" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '999px', marginBottom: '2rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+            <Sparkles size={16} color="var(--accent)" />
+            <span>AI-Powered Compatibility Matching is now live</span>
+          </div>
+          
+          <h1>
+            Find Your Perfect <br />
+            <span className="text-gradient">Home & Flatmate</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          
+          <p>
+            Stop scrolling through endless, incompatible listings. 
+            FlatMatch uses advanced AI to match your lifestyle, budget, and personality with the perfect flatmates and spaces.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+          <div className="hero-cta">
+            <button className="btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.125rem' }}>
+              <Search size={20} />
+              Start Exploring
+            </button>
+            <button 
+              className="btn-outline" 
+              style={{ padding: '1rem 2rem', fontSize: '1.125rem' }}
+              onClick={async () => {
+                try {
+                  const res = await fetch('http://localhost:5000/api/health');
+                  const data = await res.json();
+                  alert('✅ Full Stack Connected! Backend says: ' + data.message);
+                } catch (e: any) {
+                  alert('❌ Connection failed: ' + e.message);
+                }
+              }}
+            >
+              Test Full Stack Connection
+            </button>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="features">
+          <h2 style={{ textAlign: 'center', fontSize: '2.5rem' }}>Why choose <span className="text-gradient">FlatMatch?</span></h2>
+          
+          <div className="features-grid">
+            <div className="feature-card glass-panel">
+              <div className="feature-icon">
+                <Sparkles size={24} />
+              </div>
+              <h3>AI Compatibility</h3>
+              <p>Our intelligent algorithm analyzes lifestyle habits, schedules, and preferences to find your ideal living match.</p>
+            </div>
+
+            <div className="feature-card glass-panel">
+              <div className="feature-icon">
+                <MessageCircle size={24} />
+              </div>
+              <h3>Secure Messaging</h3>
+              <p>Chat instantly and securely with potential flatmates before sharing any personal contact details.</p>
+            </div>
+
+            <div className="feature-card glass-panel">
+              <div className="feature-icon">
+                <Home size={24} />
+              </div>
+              <h3>Verified Listings</h3>
+              <p>Every property and profile goes through a strict verification process to ensure a safe and trustworthy community.</p>
+            </div>
+          </div>
+        </section>
       </main>
-    </div>
+    </>
   );
 }

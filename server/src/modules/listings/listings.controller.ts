@@ -18,7 +18,20 @@ export class ListingsController {
 
   async getListings(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await listingsService.getListings(req.query);
+      let currentUserId = undefined;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+          const { verifyAccessToken } = require('../../utils/jwt');
+          const decoded = verifyAccessToken(token);
+          currentUserId = decoded.id;
+        } catch (e) {
+          // Ignore token errors for public route
+        }
+      }
+
+      const result = await listingsService.getListings(req.query, currentUserId);
       res.status(200).json({
         success: true,
         data: result,
