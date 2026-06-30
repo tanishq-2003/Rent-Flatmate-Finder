@@ -24,9 +24,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
     
     if (user && token) {
-      const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
+      const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'https://flatmatch-backend-2026.loca.lt', {
         auth: {
           token
+        },
+        extraHeaders: {
+          'Bypass-Tunnel-Reminder': 'true'
         }
       });
 
