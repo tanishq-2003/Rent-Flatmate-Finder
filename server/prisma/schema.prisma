@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  TENANT
+  OWNER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  ANY
+}
+
+enum ListingStatus {
+  ACTIVE
+  FILLED
+  DELETED
+}
+
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum RoomType {
+  PRIVATE
+  SHARED
+  ENTIRE_APARTMENT
+}
+
+enum NotificationType {
+  HIGH_COMPATIBILITY
+  INTEREST_RECEIVED
+  INTEREST_ACCEPTED
+  INTEREST_DECLINED
+  LISTING_FILLED
+  SYSTEM
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  password            String
+  role                Role
+  isVerified          Boolean              @default(false)
+  isSuspended         Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
+
+  profile             Profile?
+  listings            Listing[]
+  interests           Interest[]
+  messages            Message[]
+  notifications       Notification[]
+  adminLogs           AdminLog[]
+  sessions            Session[]
+  refreshTokens       RefreshToken[]
+  compatibilityScores CompatibilityScore[]
+}
+
+model Profile {
+  id                 String    @id @default(uuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String
+  age                Int?
+  gender             Gender?
+  occupation         String?
+  budgetMin          Int?
+  budgetMax          Int?
+  preferredLocations String[]  // Array of cities/areas
+  moveInDate         DateTime?
+  preferredRoomType  RoomType?
+  smoking            Boolean?
+  pets               Boolean?
+  bio                String?
+  photo              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Listing {
+  id                  String               @id @default(uuid())
+  ownerId             String
+  owner               User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title               String
+  description         String
+  location            String
+  city                String
+  state               String
+  country             String
+  latitude            Float?
+  longitude           Float?
+  rent                Int
+  deposit             Int
+  maintenance         Int                  @default(0)
+  roomType            RoomType
+  availableDate       DateTime
+  genderPreference    Gender               @default(ANY)
+  occupationPreference String?
+  smokingAllowed      Boolean              @default(false)
+  petsAllowed         Boolean              @default(false)
+  parking             Boolean              @default(false)
+  wifi                Boolean              @default(false)
+  electricity         Boolean              @default(false)
+  ac                  Boolean              @default(false)
+  kitchen             Boolean              @default(false)
+  laundry             Boolean              @default(false)
+  furnishing          String?              // e.g., "Fully Furnished", "Semi Furnished", "None"
+  status              ListingStatus        @default(ACTIVE)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
+
+  images              ListingImage[]
+  interests           Interest[]
+  compatibilityScores CompatibilityScore[]
+
+  @@index([city])
+  @@index([rent])
+  @@index([status])
+}
+
+model ListingImage {
+  id        String   @id @default(uuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  publicId  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model CompatibilityScore {
+  id           String   @id @default(uuid())
+  tenantId     String
+  listingId    String
+  score        Int
+  explanation  String
+  computedBy   String   // "AI" or "RULE"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       User     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, listingId])
+  @@index([score])
+}
+
+model Interest {
+  id        String         @id @default(uuid())
+  tenantId  String
+  listingId String
+  status    InterestStatus @default(PENDING)
+  message   String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  tenant    User           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  listing   Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, listingId])
+}
+
+model Chat {
+  id             String    @id @default(uuid())
+  participantIds String[]  // Store array of user IDs for simple querying
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  messages       Message[]
+}
+
+model Message {
+  id        String    @id @default(uuid())
+  chatId    String
+  chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String
+  readAt    DateTime?
+  type      String    @default("TEXT") // TEXT, IMAGE, SYSTEM
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([chatId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  isRead    Boolean          @default(false)
+  data      Json?            // Additional data like listingId or senderId
+  createdAt DateTime         @default(now())
+}
+
+model AdminLog {
+  id         String   @id @default(uuid())
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action     String   // e.g., "SUSPEND_USER", "DELETE_LISTING"
+  targetType String   // "USER", "LISTING"
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}
+
+model EmailLog {
+  id        String   @id @default(uuid())
+  to        String
+  subject   String
+  type      String
+  status    String   // "SUCCESS", "FAILED"
+  error     String?
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  device    String?
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  isRevoked Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
